@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>特古苏乌·门店计价器</title>
+  <style>
+    :root { --green:#1B4332; --green-2:#245b45; --mint:#edf5f0; --gold:#e7a63b; --orange:#d95d32; --ink:#17241e; --muted:#7b8981; --line:#e3e9e5; --bottom:174px; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body { margin:0; min-height:100%; background:#f6f8f6; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    body { padding-bottom:calc(var(--bottom) + env(safe-area-inset-bottom)); }
+    button { font:inherit; border:0; cursor:pointer; touch-action:manipulation; }
+    .topbar { position:sticky; top:0; z-index:10; background:var(--green); color:#fff; padding:13px 16px 0; box-shadow:0 2px 12px #153a2b30; }
+    .topline { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { margin:0; font-size:20px; line-height:1.25; font-weight:800; letter-spacing:0; }
+    .reset { flex:none; background:#f4b34c; color:#3f2b0d; font-size:14px; font-weight:800; min-height:40px; padding:0 14px; border-radius:9px; box-shadow:0 2px 0 #b9791f; }
+    .reset:active { transform:translateY(1px); box-shadow:none; }
+    .tabs { display:flex; gap:25px; margin-top:12px; }
+    .tab { position:relative; color:#b9cec2; background:none; padding:10px 2px 11px; font-size:15px; font-weight:700; }
+    .tab.active { color:#fff; }
+    .tab.active:after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px; border-radius:3px 3px 0 0; background:#f4b34c; }
+    .content { max-width:720px; margin:0 auto; padding:12px 12px 0; }
+    .hint { color:var(--muted); font-size:13px; margin:1px 4px 9px; }
+    .list { display:grid; gap:8px; }
+    .item { display:flex; align-items:center; justify-content:space-between; min-height:88px; gap:10px; padding:13px 10px 13px 14px; background:#fff; border:1px solid var(--line); border-radius:12px; transition:.18s ease; }
+    .item.selected { border-color:#9cc4ad; background:var(--mint); box-shadow:0 2px 8px #1b433214; }
+    .info { min-width:0; flex:1; }
+    .name { font-size:17px; font-weight:800; line-height:1.35; overflow-wrap:anywhere; }
+    .spec { margin-top:4px; color:var(--muted); font-size:12px; line-height:1.3; }
+    .price { margin-top:5px; color:var(--orange); font-size:16px; font-weight:900; }
+    .stepper { display:flex; align-items:center; flex:none; gap:8px; }
+    .step { display:grid; place-items:center; width:42px; height:42px; border-radius:10px; font-size:27px; line-height:1; font-weight:500; }
+    .minus { color:var(--green); background:#e7f0eb; }
+    .plus { color:#fff; background:var(--green); }
+    .step:active { transform:scale(.94); }
+    .count { min-width:23px; text-align:center; font-size:19px; font-weight:800; }
+    .empty { padding:45px 20px; color:var(--muted); text-align:center; background:#fff; border-radius:12px; }
+    .checkout { position:fixed; z-index:20; left:0; right:0; bottom:0; padding:11px 13px calc(11px + env(safe-area-inset-bottom)); background:#fff; border-top:1px solid var(--line); box-shadow:0 -3px 18px #1b43321b; }
+    .checkout-inner { max-width:720px; margin:auto; display:flex; align-items:center; gap:10px; }
+    .summary { min-width:0; flex:1; }
+    .total { color:var(--orange); font-size:29px; font-weight:900; line-height:1.08; white-space:nowrap; }
+    .total small { color:var(--muted); font-size:13px; font-weight:600; margin-left:4px; }
+    .status { margin-top:7px; padding:7px 9px; border-radius:7px; color:#7c5a16; background:#fff6db; font-size:12px; line-height:1.3; font-weight:700; }
+    .status.good { color:#226040; background:#e4f3e9; }
+    .status.bad { color:#a53e2a; background:#fbe8e3; }
+    .detail-btn { flex:none; min-height:58px; padding:0 13px; border-radius:10px; color:#fff; background:var(--green); font-size:15px; font-weight:800; }
+    .detail-btn:active { background:var(--green-2); }
+    .overlay { position:fixed; inset:0; z-index:30; display:none; align-items:flex-end; background:#10271b66; }
+    .overlay.open { display:flex; }
+    .drawer { width:100%; max-height:82vh; overflow:auto; padding:17px 14px calc(18px + env(safe-area-inset-bottom)); background:#fff; border-radius:18px 18px 0 0; animation:up .2s ease-out; }
+    @keyframes up { from { transform:translateY(30px); opacity:.5; } to { transform:translateY(0); opacity:1; } }
+    .drawer-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:13px; }
+    .drawer h2 { margin:0; color:var(--green); font-size:20px; }
+    .close { width:36px; height:36px; border-radius:50%; color:var(--muted); background:#f0f3f1; font-size:24px; line-height:1; }
+    .detail-row { display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px solid var(--line); }
+    .detail-info { min-width:0; flex:1; }
+    .detail-name { font-weight:800; font-size:15px; }
+    .detail-sub { margin-top:3px; color:var(--muted); font-size:12px; }
+    .detail-sub strong { color:var(--orange); }
+    .detail-row .stepper { gap:5px; }
+    .detail-row .step { width:34px; height:34px; font-size:22px; border-radius:8px; }
+    .detail-row .count { min-width:20px; font-size:16px; }
+    .subtotal { min-width:61px; color:var(--orange); text-align:right; font-size:14px; font-weight:800; }
+    .drawer-total { margin-top:15px; text-align:right; color:var(--green); font-size:16px; font-weight:800; }
+    @media (min-width:600px) { .content { padding-left:20px; padding-right:20px; } .topbar { padding-left:max(16px, calc((100% - 700px)/2)); padding-right:max(16px, calc((100% - 700px)/2)); } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topline"><h1>特古苏乌·门店计价器</h1><button class="reset" id="reset">清空归零</button></div>
+    <nav class="tabs" aria-label="商品分类">
+      <button class="tab active" data-category="all">全部</button>
+      <button class="tab" data-category="dairy">乳品零食</button>
+      <button class="tab" data-category="meat">牛羊肉类</button>
+    </nav>
+  </header>
+  <main class="content">
+    <div class="hint">开业 330 元任选套餐 · 点击加减选择商品</div>
+    <section class="list" id="list"></section>
+  </main>
+  <section class="checkout">
+    <div class="checkout-inner">
+      <div class="summary"><div class="total" id="total">¥0 <small>0 件</small></div><div class="status" id="status">请点选商品（套餐目标 ¥330 左右）</div></div>
+      <button class="detail-btn" id="detailBtn">已选明细</button>
+    </div>
+  </section>
+  <div class="overlay" id="overlay">
+    <div class="drawer" role="dialog" aria-modal="true" aria-label="已选明细">
+      <div class="drawer-head"><h2>已选明细</h2><button class="close" id="close" aria-label="关闭">×</button></div>
+      <div id="details"></div><div class="drawer-total" id="drawerTotal"></div>
+    </div>
+  </div>
+  <script>
+    const products = [
+      {name:'生态纯牛奶',spec:'200ml*16/提',price:55,unit:'提',category:'dairy'},
+      {name:'生态纯牛奶',spec:'200ml*10/提',price:36,unit:'提',category:'dairy'},
+      {name:'生态纯牛奶',spec:'1L*16/提',price:75,unit:'提',category:'dairy'},
+      {name:'有机纯牛奶',spec:'200ml*16/提',price:63,unit:'提',category:'dairy'},
+      {name:'烤鲜奶',spec:'10*10g/袋装',price:19.9,unit:'袋',category:'dairy'},
+      {name:'内蒙奶嚼口',spec:'248g/瓶（48瓶/箱）',price:12,unit:'瓶',category:'dairy'},
+      {name:'奶制品礼盒装',spec:'6盒/提装多味',price:175,unit:'提',category:'dairy'},
+      {name:'有机燕麦',spec:'35*12g/袋装',price:21,unit:'袋',category:'dairy'},
+      {name:'风干牛肉干',spec:'248g/袋装',price:90,unit:'袋',category:'dairy'},
+      {name:'水果玉米粒',spec:'10*60g/袋装',price:28,unit:'袋',category:'dairy'},
+      {name:'苏尼特羊肉-羊排',spec:'3斤/袋 (¥65/斤)',price:195,unit:'袋',category:'meat'},
+      {name:'苏尼特羊肉-羊腿',spec:'2.8斤/袋 (¥65/斤)',price:182,unit:'袋',category:'meat'},
+      {name:'苏尼特羊肉-羊脊骨',spec:'5斤/袋 (¥40/斤)',price:200,unit:'袋',category:'meat'},
+      {name:'苏尼特羊肉-羊肉卷',spec:'5斤/卷 (¥65/斤)',price:325,unit:'卷',category:'meat'},
+      {name:'苏尼特羊肉-羊肉片',spec:'500g/盒 (¥70/斤)',price:70,unit:'盒',category:'meat'},
+      {name:'苏尼特羊肉-肉组合礼盒',spec:'15.8斤/盒',price:902,unit:'盒',category:'meat'},
+      {name:'内蒙牛肉-牛腩',spec:'2斤/袋 (¥60/斤)',price:120,unit:'袋',category:'meat'},
+      {name:'内蒙牛肉-牛腱肉',spec:'2斤/袋 (¥70/斤)',price:140,unit:'袋',category:'meat'},
+      {name:'内蒙牛肉-牛排',spec:'2斤/袋 (¥55/斤)',price:110,unit:'袋',category:'meat'},
+      {name:'内蒙牛肉-上脑牛排',spec:'200g/盒',price:50,unit:'盒',category:'meat'},
+      {name:'内蒙牛肉-肥牛卷',spec:'500g/袋 (¥65/斤)',price:65,unit:'袋',category:'meat'}
+    ];
+    const quantities = Array(products.length).fill(0);
+    let category = 'all';
+    const money = value => { const n = Math.round(value * 10) / 10; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
+    const totalValue = () => quantities.reduce((sum, qty, i) => sum + Math.round(products[i].price * 10) * qty, 0) / 10;
+    const totalCount = () => quantities.reduce((sum, qty) => sum + qty, 0);
+    function change(i, delta) { quantities[i] = Math.max(0, quantities[i] + delta); render(); if (document.getElementById('overlay').classList.contains('open')) renderDetails(); }
+    function stepper(i) { return `<div class="stepper"><button class="step minus" data-action="minus" data-i="${i}" aria-label="减少">−</button><span class="count">${quantities[i]}</span><button class="step plus" data-action="plus" data-i="${i}" aria-label="增加">+</button></div>`; }
+    function render() {
+      const list = document.getElementById('list');
+      const visible = products.map((p,i) => ({p,i})).filter(({p}) => category === 'all' || p.category === category);
+      list.innerHTML = visible.length ? visible.map(({p,i}) => `<article class="item ${quantities[i] ? 'selected' : ''}"><div class="info"><div class="name">${p.name}</div><div class="spec">规格：${p.spec}</div><div class="price">¥${money(p.price)} / ${p.unit}</div></div>${stepper(i)}</article>`).join('') : '<div class="empty">暂无商品</div>';
+      document.getElementById('total').innerHTML = `¥${money(totalValue())} <small>${totalCount()} 件</small>`;
+      renderStatus();
+    }
+    function renderStatus() {
+      const total = totalValue(), status = document.getElementById('status');
+      status.className = 'status';
+      if (!total) status.textContent = '请点选商品（套餐目标 ¥330 左右）';
+      else if (total < 325) { const gap = 330 - total; const suggestions = products.filter(p => p.price <= gap + 2 && p.price >= gap - 3).sort((a,b) => Math.abs(a.price-gap)-Math.abs(b.price-gap)).slice(0,2); const text = suggestions.length ? ` · 推荐：${suggestions.map(p => `${p.name} ¥${money(p.price)}`).join('、')}` : ''; status.textContent = `还差 ¥${money(gap)} 到 330${text}`; }
+      else if (total <= 335) { status.classList.add('good'); status.textContent = '✅ 符合 330 元套餐范围！'; }
+      else { status.classList.add('bad'); status.textContent = `⚠️ 已超出 330 元标准 ¥${money(total - 330)}`; }
+    }
+    function renderDetails() {
+      const chosen = products.map((p,i) => ({p,i})).filter(({i}) => quantities[i] > 0);
+      document.getElementById('details').innerHTML = chosen.length ? chosen.map(({p,i}) => `<div class="detail-row"><div class="detail-info"><div class="detail-name">${p.name}</div><div class="detail-sub">${p.spec} · <strong>¥${money(p.price)} / ${p.unit}</strong></div></div>${stepper(i)}<div class="subtotal">¥${money(p.price * quantities[i])}</div></div>`).join('') : '<div class="empty">还没有选择商品</div>';
+      document.getElementById('drawerTotal').textContent = `合计：¥${money(totalValue())} · ${totalCount()} 件`;
+    }
+    document.addEventListener('click', e => { const button = e.target.closest('[data-action]'); if (button) change(Number(button.dataset.i), button.dataset.action === 'plus' ? 1 : -1); });
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { category = tab.dataset.category; document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab)); render(); }));
+    document.getElementById('reset').addEventListener('click', () => { quantities.fill(0); render(); if (document.getElementById('overlay').classList.contains('open')) renderDetails(); });
+    document.getElementById('detailBtn').addEventListener('click', () => { renderDetails(); document.getElementById('overlay').classList.add('open'); });
+    document.getElementById('close').addEventListener('click', () => document.getElementById('overlay').classList.remove('open'));
+    document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') e.currentTarget.classList.remove('open'); });
+    render();
+  </script>
+</body>
+</html>
