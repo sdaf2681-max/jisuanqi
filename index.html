@@ -24,7 +24,9 @@
     .list { display:grid; gap:8px; }
     .item { display:flex; align-items:center; justify-content:space-between; min-height:88px; gap:10px; padding:13px 10px 13px 14px; background:#fff; border:1px solid var(--line); border-radius:12px; transition:.18s ease; }
     .item.selected { border-color:#9cc4ad; background:var(--mint); box-shadow:0 2px 8px #1b433214; }
-    .info { min-width:0; flex:1; }
+    .info { min-width:0; flex:1; display:flex; align-items:center; gap:10px; }
+    .thumb { flex:none; width:64px; height:48px; border:1px solid var(--line); border-radius:8px; object-fit:cover; }
+    .info > div:not(.thumb) { min-width:0; }
     .name { font-size:17px; font-weight:800; line-height:1.35; overflow-wrap:anywhere; }
     .spec { margin-top:4px; color:var(--muted); font-size:12px; line-height:1.3; }
     .price { margin-top:5px; color:var(--orange); font-size:16px; font-weight:900; }
@@ -124,7 +126,7 @@
     function render() {
       const list = document.getElementById('list');
       const visible = products.map((p,i) => ({p,i})).filter(({p}) => category === 'all' || p.category === category);
-      list.innerHTML = visible.length ? visible.map(({p,i}) => `<article class="item ${quantities[i] ? 'selected' : ''}"><div class="info"><div class="name">${p.name}</div><div class="spec">规格：${p.spec}</div><div class="price">¥${money(p.price)} / ${p.unit}</div></div>${stepper(i)}</article>`).join('') : '<div class="empty">暂无商品</div>';
+      list.innerHTML = visible.length ? visible.map(({p,i}) => `<article class="item ${quantities[i] ? 'selected' : ''}"><div class="info"><img class="thumb" src="images/${i + 1}.jpg" alt="" onerror="this.style.display='none'"><div><div class="name">${p.name}</div><div class="spec">规格：${p.spec}</div><div class="price">¥${money(p.price)} / ${p.unit}</div></div></div>${stepper(i)}</article>`).join('') : '<div class="empty">暂无商品</div>';
       document.getElementById('total').innerHTML = `¥${money(totalValue())} <small>${totalCount()} 件</small>`;
       renderStatus();
     }
